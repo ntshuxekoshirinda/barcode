@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Generator Studio</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <div class="flex-grow flex items-center justify-center p-6">
+        <div class="bg-slate-800 p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-700">
+            <h1 class="text-3xl font-extrabold text-center mb-6 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                Code Generator Studio
+            </h1>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-400 mb-2">Select Code Type</label>
+                <div class="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-xl">
+                    <button id="btn-qr" onclick="setType('qr')" class="py-2.5 rounded-lg text-sm font-semibold transition bg-cyan-500 text-slate-900 shadow cursor-pointer">
+                        QR Code
+                    </button>
+                    <button id="btn-barcode" onclick="setType('barcode')" class="py-2.5 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-slate-200 cursor-pointer">
+                        Barcode
+                    </button>
+                </div>
+            </div>
+
+            <div id="prefix-container" class="mb-4 hidden">
+                <label class="block text-sm font-medium text-slate-400 mb-2">Barcode Prefix (Max 3 Letters)</label>
+                <input type="text" id="prefix-input" maxlength="3" placeholder="e.g., ABC" 
+                       class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 uppercase font-mono">
+            </div>
+
+            <div class="mb-6">
+                <label id="data-label" class="block text-sm font-medium text-slate-400 mb-2">URL or Text</label>
+                <input type="text" id="data-input" placeholder="https://example.com" 
+                       class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <button onclick="triggerDownload('image')" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold py-3.5 px-4 rounded-xl transition shadow-md cursor-pointer text-center">
+                    Download PNG Image
+                </button>
+                <button onclick="triggerDownload('pdf')" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3.5 px-4 rounded-xl transition border border-slate-600 cursor-pointer text-center">
+                    Download PDF Document
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="w-full bg-slate-950/60 border-t border-slate-800/80 py-4 text-center backdrop-blur-sm">
+        <p class="text-xs text-slate-500 tracking-wide">
+            &copy; NTSHUXEKO SHIRINDA
+        </p>
+    </footer>
+
+    <script>
+        let currentType = 'qr';
+        const API_BASE = 'http://127.0.0.1:3000/generate';
+
+        // Restrict prefix inputs to alphabetical values only
+        document.getElementById('prefix-input').addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^a-zA-Z]/g, '');
+        });
+
+        function setType(type) {
+            currentType = type;
+            const btnQr = document.getElementById('btn-qr');
+            const btnBarcode = document.getElementById('btn-barcode');
+            const prefixContainer = document.getElementById('prefix-container');
+            const dataLabel = document.getElementById('data-label');
+            const dataInput = document.getElementById('data-input');
+
+            if (type === 'qr') {
+                btnQr.className = "py-2.5 rounded-lg text-sm font-semibold transition bg-cyan-500 text-slate-900 shadow cursor-pointer";
+                btnBarcode.className = "py-2.5 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-slate-200 cursor-pointer";
+                prefixContainer.classList.add('hidden');
+                dataLabel.innerText = "URL or Text";
+                dataInput.placeholder = "https://example.com";
+            } else {
+                btnBarcode.className = "py-2.5 rounded-lg text-sm font-semibold transition bg-cyan-500 text-slate-900 shadow cursor-pointer";
+                btnQr.className = "py-2.5 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-slate-200 cursor-pointer";
+                prefixContainer.classList.remove('hidden');
+                dataLabel.innerText = "Barcode Numeric Data";
+                dataInput.placeholder = "12345678";
+            }
+        }
+
+        function triggerDownload(format) {
+            const rawData = document.getElementById('data-input').value.trim();
+            if (!rawData) {
+                alert('Please enter data for your code first.');
+                return;
+            }
+
+            let finalData = rawData;
+            
+            if (currentType === 'barcode') {
+                const prefix = document.getElementById('prefix-input').value.trim().toUpperCase();
+                finalData = prefix + rawData;
+            }
+
+            const url = `${API_BASE}/${format}?type=${currentType}&data=${encodeURIComponent(finalData)}`;
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
