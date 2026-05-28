@@ -1,7 +1,7 @@
 // src/generator/generator.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
 import * as QRCode from 'qrcode';
-import * as bwipjs from 'bwip-js';
+import bwipjs from 'bwip-js';
 import PDFDocument from 'pdfkit';
 
 @Injectable()
@@ -13,11 +13,26 @@ export class GeneratorService {
 
     try {
       if (type === 'qr') {
-        const qrBuffer = await QRCode.toBuffer(data, { type: 'png', margin: 2, width: 400 });
+        // Handle variations in how the bundler exports the QRCode library on the edge
+        const qrModule = (QRCode as any).default || QRCode;
+        const toBufferFn = qrModule.toBuffer || (QRCode as any).toBuffer;
+
+        if (typeof toBufferFn !== 'function') {
+          throw new Error('QRCode.toBuffer method could not be resolved in this runtime context');
+        }
+
+        const qrBuffer = await toBufferFn(data, { type: 'png', margin: 2, width: 400 });
         return { buffer: qrBuffer as Buffer, mimeType: 'image/png' };
       } else {
-        // Safe check for prefixed data
-        const barcodeBuffer = await bwipjs.toBuffer({
+        // Handle variations in how the bundler exports the bwipjs library on the edge
+        const bwipModule = (bwipjs as any).default || bwipjs;
+        const toBufferFn = bwipModule.toBuffer || (bwipjs as any).toBuffer;
+
+        if (typeof toBufferFn !== 'function') {
+          throw new Error('bwipjs.toBuffer method could not be resolved in this runtime context');
+        }
+
+        const barcodeBuffer = await toBufferFn({
           bcid: 'code128',
           text: data,
           scale: 3,
@@ -27,7 +42,7 @@ export class GeneratorService {
         });
         return { buffer: barcodeBuffer, mimeType: 'image/png' };
       }
-    } catch (error) {
+    } catch (error: any) {
       throw new BadRequestException(`Failed to generate ${type}: ${error.message}`);
     }
   }

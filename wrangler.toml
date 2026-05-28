@@ -1,0 +1,8 @@
+# wrangler.toml
+name = "code-generator-studio"
+main = "dist/worker.js" # We will change this path to our custom bundle output
+compatibility_date = "2026-05-27"
+compatibility_flags = [ "nodejs_compat" ]
+
+[site]
+bucket = "./public"
